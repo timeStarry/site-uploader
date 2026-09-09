@@ -1,0 +1,10 @@
+services:
+  site-uploader:
+    build: .
+    restart: unless-stopped
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    env_file: .env
+    ports:
+      - "${BIND_IP:-100.99.0.5}:${PORT:-18080}:${PORT:-18080}"
+    volumes:
+      - ./data:/data

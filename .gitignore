@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+secrets.env
+.codex/
+data/
+*.log
+*.bak
+*.bak.*
+__pycache__/
+/site-uploader
+/deploy/runtime.*.json
+/deploy/metadata.json
+/deploy/Caddyfile.before

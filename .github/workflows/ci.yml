@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: false
+      - name: Check formatting
+        run: test -z "$(gofmt -l main.go)"
+      - name: Go checks
+        run: |
+          go test ./...
+          go vet ./...
+          go build -o /tmp/site-uploader .
+      - name: Check shell scripts
+        run: |
+          bash -n deploy/install-caddy.sh
+          bash -n skills/site-uploader/scripts/check_token.sh

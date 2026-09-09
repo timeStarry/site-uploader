@@ -1,0 +1,4 @@
+interface:
+  display_name: Site Uploader
+  short_description: Upload HTML to site.tsio.top with token checks
+  default_prompt: Use the site-uploader skill to validate credentials and upload the requested HTML file.
