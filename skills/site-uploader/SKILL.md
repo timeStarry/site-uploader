@@ -1,11 +1,13 @@
 ---
 name: site-uploader
-description: Upload user-provided HTML files to site.tsio.top through the authenticated site-uploader API, with first-use credential setup and token validation.
+description: Upload user-provided HTML files to a configured site-uploader API, with first-use credential setup, token validation, listing, search, and optional page passwords.
 ---
 
 # Site Uploader
 
-Use this skill when the user asks to publish, upload, or update a standalone HTML page on `site.tsio.top`.
+Use this skill when the user asks to publish, upload, list, search, or update a standalone HTML page through a site-uploader deployment.
+
+The site homepage is informational only and never provides a public page list. For list or search questions, use the authenticated APIs below and return concise results; paginate when `pages` is greater than 1.
 
 ## First-use setup
 
@@ -14,11 +16,11 @@ Use this skill when the user asks to publish, upload, or update a standalone HTM
 
    ```dotenv
    SITE_UPLOADER_TOKEN=replace-with-the-site-token
-   SITE_UPLOADER_BASE_URL=https://site.tsio.top
+   SITE_UPLOADER_BASE_URL=https://your-site.example
    ```
 
    Do not invent, echo, commit, or place the token in chat. The user must provide the value privately in that file.
-3. If the file exists, source it in a shell without printing it. Require `SITE_UPLOADER_TOKEN`; default `SITE_UPLOADER_BASE_URL` to `https://site.tsio.top`.
+3. If the file exists, source it in a shell without printing it. Require both `SITE_UPLOADER_TOKEN` and `SITE_UPLOADER_BASE_URL`; never assume a deployment URL.
 4. Validate the token before uploading with the read-only endpoint:
 
    ```sh
@@ -41,8 +43,10 @@ curl -fsS -X POST "${SITE_UPLOADER_BASE_URL}/api/sites" \
   -F "file=@${HTML_PATH}"
 ```
 
+Only add `-F "access_password=1234"` when the user explicitly requests a page access password. It must be exactly four digits; omit it by default. Do not put the access password in the final response unless the user supplied or requests it.
+
 Never include the token in command output, logs, generated files, or the final response. Return the API's `url` and `id` to the user. Do not upload a file merely to test credentials; use `/api/auth/check`.
 
-If the public HTTPS path is unavailable from the current network, retry the read-only token check and upload through the Tailnet fallback `http://100.99.0.5:18080`, preserving the same paths and headers. Only use that fallback when the host can reach the Tailnet address.
+If the configured URL is unavailable, report the failure. Do not invent a private-network fallback or deployment address; use one only when the user or local secrets explicitly provides it.
 
 For the API contract and failure handling, read [references/api.md](references/api.md).

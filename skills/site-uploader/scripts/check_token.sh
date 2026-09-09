@@ -6,7 +6,7 @@ if [[ ! -f "${secrets_file}" ]]; then echo "MISSING_SECRETS:${secrets_file}"; ex
 # shellcheck disable=SC1090
 source "${secrets_file}"
 : "${SITE_UPLOADER_TOKEN:?SITE_UPLOADER_TOKEN is missing from ${secrets_file}}"
-base_url="${SITE_UPLOADER_BASE_URL:-https://site.tsio.top}"
+base_url="${SITE_UPLOADER_BASE_URL:?SITE_UPLOADER_BASE_URL is missing from ${secrets_file}}"
 base_url="${base_url%/}"
 status="$(curl -fsS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${SITE_UPLOADER_TOKEN}" "${base_url}/api/auth/check" || true)"
 case "${status}" in

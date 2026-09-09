@@ -5,6 +5,6 @@ services:
     user: "${APP_UID:-1000}:${APP_GID:-1000}"
     env_file: .env
     ports:
-      - "${BIND_IP:-100.99.0.5}:${PORT:-18080}:${PORT:-18080}"
+      - "${BIND_IP:-127.0.0.1}:${HOST_PORT:-8080}:${PORT:-8080}"
     volumes:
       - ./data:/data

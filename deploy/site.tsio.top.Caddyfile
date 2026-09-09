@@ -1,4 +1,0 @@
-# Add this site block to /etc/caddy/Caddyfile on 100.99.0.6.
-site.tsio.top {
-	reverse_proxy 100.99.0.5:18080
-}

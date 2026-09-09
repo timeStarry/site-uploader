@@ -26,6 +26,4 @@ jobs:
           go vet ./...
           go build -o /tmp/site-uploader .
       - name: Check shell scripts
-        run: |
-          bash -n deploy/install-caddy.sh
-          bash -n skills/site-uploader/scripts/check_token.sh
+        run: bash -n skills/site-uploader/scripts/check_token.sh

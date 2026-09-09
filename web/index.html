@@ -1,1 +1,20 @@
-<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{.Domain}}</title><style>body{font:16px system-ui;max-width:760px;margin:40px auto;padding:0 20px;color:#222}h1{font-size:24px}.site{padding:14px 0;border-bottom:1px solid #eee}.muted{color:#777;font-size:14px}a{color:#06c}</style><h1>静态站点</h1><p class=muted>{{.Domain}}</p>{{if .Sites}}{{range .Sites}}<div class=site><a href="/s/{{.ID}}" target=_blank>{{.Title}}</a><div>{{.Summary}}</div><small class=muted>{{.CreatedAt}}</small></div>{{end}}{{else}}<p>还没有上传站点。</p>{{end}}
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{.Title}}</title>
+<style>
+  :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#202124;background:#fafafa}
+  body{min-height:100vh;margin:0;display:grid;place-items:center;text-align:center}
+  main{width:min(680px,calc(100% - 40px));padding:48px 20px}
+  h1{font-size:clamp(28px,5vw,44px);font-weight:650;letter-spacing:.02em;margin:0 0 18px}
+  .domain{margin:0;color:#687078;font-size:17px;word-break:break-word}
+  hr{border:0;border-top:1px solid #dfe3e6;margin:28px auto;width:min(420px,80%)}
+  .count{margin:0;color:#3f464d;font-size:18px}
+</style>
+<main>
+  <h1>{{.Title}}</h1>
+  <p class="domain">{{.Domain}}</p>
+  <hr>
+  <p class="count">本站有 {{.Count}} 个可访问静态页面</p>
+</main>
+</html>
