@@ -8,5 +8,5 @@ WORKDIR /app
 COPY --from=build /site-uploader .
 COPY web ./web
 USER app
-EXPOSE 18080
+EXPOSE 8080
 CMD ["./site-uploader"]
