@@ -1,0 +1,4 @@
+# Keep deployment helpers and page templates in the repository, but exclude
+# them from GitHub's language statistics.
+*.sh linguist-detectable=false
+*.html linguist-detectable=false
