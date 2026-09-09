@@ -23,7 +23,8 @@ Compose 默认仅绑定回环地址，端口仅为示例值；生产部署应由
 - `GET /api/auth/check`：Bearer 令牌检查；有效返回 `204`，无效返回 `401`。
 - `GET /api/sites?page=1&page_size=20`：鉴权分页列表，最多每页 100 项。返回 `{items,page,page_size,total,pages}`。
 - `GET /api/sites/search?q=...&page=1&page_size=20`：鉴权模糊搜索标题、摘要和 ID，使用简单本地分词，返回同样的分页结构。
-- `POST /api/sites`：鉴权 multipart 上传。必填 `title`、`file`；可选 `summary`、`access_password`。访问密码必须是四位 ASCII 数字，省略即不设密码。
+- `POST /api/sites`：鉴权 multipart 上传。必填 `title`、`file`；可选 `summary`、`access_password`。访问密码必须是四位 ASCII 数字，省略即不设密码。单文件上限为 64 MiB，超限返回 413，不会静默截断。
+- `PUT /api/sites/{id}`：鉴权替换已有页面文件；`file` 必填，其他字段可选，用于修复或更新页面并保留原 ID。
 - `GET /s/{id}`：读取页面；受保护页面显示密码表单，正确提交后设置 HttpOnly Cookie。
 
 上传示例：

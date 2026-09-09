@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -30,6 +31,8 @@ type App struct {
 	sites []Site
 }
 
+const maxUploadBytes = 64 << 20
+
 func main() {
 	c := Config{env("DOMAIN", "localhost"), os.Getenv("UPLOAD_TOKEN"), env("DATA_DIR", "/data"), env("PORT", "8080"), env("SITE_TITLE", "静态Web托管页面")}
 	if c.Token == "" {
@@ -42,6 +45,7 @@ func main() {
 	m := http.NewServeMux()
 	m.HandleFunc("/api/auth/check", a.authCheck)
 	m.HandleFunc("/api/sites", a.sitesAPI)
+	m.HandleFunc("/api/sites/", a.siteByIDAPI)
 	m.HandleFunc("/api/sites/search", a.searchAPI)
 	m.HandleFunc("/s/", a.serve)
 	m.HandleFunc("/", a.home)
@@ -105,7 +109,7 @@ func (a *App) sitesAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if e := r.ParseMultipartForm(20 << 20); e != nil {
+	if e := r.ParseMultipartForm(maxUploadBytes + 1); e != nil {
 		http.Error(w, "invalid form", 400)
 		return
 	}
@@ -134,8 +138,11 @@ func (a *App) sitesAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	_, e = io.Copy(o, io.LimitReader(f, 10<<20))
+	n, e := io.Copy(o, io.LimitReader(f, maxUploadBytes+1))
 	o.Close()
+	if e == nil && n > maxUploadBytes {
+		e = fmt.Errorf("upload exceeds %d bytes", maxUploadBytes)
+	}
 	if e != nil {
 		os.Remove(p)
 		http.Error(w, "upload failed", 500)
@@ -157,6 +164,97 @@ func (a *App) sitesAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"id": id, "url": "https://" + a.cfg.Domain + "/s/" + id, "password_protected": password != ""})
+}
+
+func (a *App) siteByIDAPI(w http.ResponseWriter, r *http.Request) {
+	if !a.authorized(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if r.Method != http.MethodPut {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/sites/")
+	if id == "" || strings.Contains(id, "/") {
+		http.NotFound(w, r)
+		return
+	}
+	if e := r.ParseMultipartForm(maxUploadBytes + 1); e != nil {
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
+	f, _, e := r.FormFile("file")
+	if e != nil {
+		http.Error(w, "file is required", http.StatusBadRequest)
+		return
+	}
+	defer f.Close()
+	title, summary := strings.TrimSpace(r.FormValue("title")), strings.TrimSpace(r.FormValue("summary"))
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	idx := -1
+	for i := range a.sites {
+		if a.sites[i].ID == id {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		http.NotFound(w, r)
+		return
+	}
+	site := a.sites[idx]
+	if title != "" {
+		site.Title = title
+	}
+	if summary != "" {
+		site.Summary = summary
+	}
+	if _, ok := r.MultipartForm.Value["access_password"]; ok {
+		password := strings.TrimSpace(r.FormValue("access_password"))
+		if password != "" && !digits4(password) {
+			http.Error(w, "access_password must be exactly four digits", http.StatusBadRequest)
+			return
+		}
+		site.PasswordHash, site.PasswordSalt = "", ""
+		if password != "" {
+			site.PasswordSalt = randomHex(16)
+			site.PasswordHash = hashPassword(site.PasswordSalt, password)
+		}
+	}
+	tmp := filepath.Join(a.cfg.DataDir, "html", id+".html.tmp")
+	o, e := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	if e != nil {
+		http.Error(w, "storage error", 500)
+		return
+	}
+	n, e := io.Copy(o, io.LimitReader(f, maxUploadBytes+1))
+	o.Close()
+	if e == nil && n > maxUploadBytes {
+		e = fmt.Errorf("upload exceeds %d bytes", maxUploadBytes)
+	}
+	if e != nil {
+		os.Remove(tmp)
+		if n > maxUploadBytes {
+			http.Error(w, "file too large", http.StatusRequestEntityTooLarge)
+		} else {
+			http.Error(w, "upload failed", 500)
+		}
+		return
+	}
+	if e = os.Rename(tmp, filepath.Join(a.cfg.DataDir, "html", id+".html")); e != nil {
+		os.Remove(tmp)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	a.sites[idx] = site
+	if e = a.save(); e != nil {
+		http.Error(w, "storage error", 500)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{"id": id, "url": "https://" + a.cfg.Domain + "/s/" + id, "password_protected": site.PasswordHash != ""})
 }
 
 func (a *App) searchAPI(w http.ResponseWriter, r *http.Request) {

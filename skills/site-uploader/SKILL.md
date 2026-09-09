@@ -49,4 +49,6 @@ Never include the token in command output, logs, generated files, or the final r
 
 If the configured URL is unavailable, report the failure. Do not invent a private-network fallback or deployment address; use one only when the user or local secrets explicitly provides it.
 
+When the user provides an existing page ID and a replacement HTML file, use `PUT /api/sites/{id}` with the file instead of creating a second page. Confirm the replacement response and, when practical, compare the downloaded byte count with the local file. Never assume a successful upload truncated or transformed the file.
+
 For the API contract and failure handling, read [references/api.md](references/api.md).
